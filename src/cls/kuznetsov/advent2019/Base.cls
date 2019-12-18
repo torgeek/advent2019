@@ -1,7 +1,7 @@
 Class kuznetsov.Advent2019.Base
 {
 
-Parameter Folder = "/irisdev/app/";
+Parameter Folder = "/irisdev/app/data/";
 
 ClassMethod GetInput(fileName As %String) As %Stream
 {

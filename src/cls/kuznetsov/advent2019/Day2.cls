@@ -3,20 +3,25 @@ Class kuznetsov.Advent2019.Day2 Extends kuznetsov.Advent2019.Base
 
 Parameter InputFile = "input2.txt";
 
-// w ##class(kuznetsov.Advent2019.Day1).Run()
+Parameter MAX = 99;
+
+// w ##class(kuznetsov.Advent2019.Day2).Run()
 
 ClassMethod Run(verbose = 0) As %Status
 {
-    do ..ReadFromFile(.codeSet, .count)
+    set sc = ..ReadFromFile(.codeSet, .count)
+    if $$$ISERR(sc) return 0
 
+    // Part 1/2
     do ..CopyCode(.codeSet, count, .copyCodeSet)    
     do ..ProgramAlarm1202(.copyCodeSet)
     do ..CodeRun(.copyCodeSet, count, .outputValue)
     w "Value is left at position 0: "_ outputValue, !
 
+    // Part 2/2 – bruteforce selection noun and verb
     do ..CopyCode(.codeSet, count, .copyCodeSet)
-    for i = 0:1:99 {
-        for j = 0:1:99 {
+    for i = 0:1:..#MAX {
+        for j = 0:1:..#MAX {
             do ..CopyCode(.copyCodeSet, count, .copyCodeSetIJ)
             do ..NounAndVerbInit(.copyCodeSetIJ, i, j)
             do ..CodeRun(.copyCodeSetIJ, count, .outputValue)
@@ -45,8 +50,12 @@ ClassMethod Run(verbose = 0) As %Status
 
 ClassMethod ReadFromFile(codeSet, count) As %Status
 {
+    Set sc = $$$OK
     set stream = ..GetInput(..#InputFile)
-    if stream.%IsNull() { w "Panic! File " _ ..#InputFile _ " is empty!", ! }
+    if stream.%IsNull() { 
+        w "Panic! File " _ ..#InputFile _ " is empty!", ! 
+        return 0 
+    }
     set i = 0
     set codeSet(0) = ""
 	while 'stream.AtEnd {
@@ -59,7 +68,7 @@ ClassMethod ReadFromFile(codeSet, count) As %Status
         }
     }
     set count = i
-    return $$$OK
+    return sc
 }
 
 ClassMethod Add(codeSet, i) As %Status
@@ -74,12 +83,7 @@ ClassMethod Mul(codeSet, i) As %Status
     return $$$OK
 }
 
-ClassMethod Halt() As %Status
-{
-    return $$$OK
-}
-
-ClassMethod UnknownOps() As %Status
+ClassMethod UnknownOps(codeSet, i) As %Status
 {
     w "Unknown opcode "_ codeSet(i) _" in line "_ i _"– something went wrong!", !
     return $$$OK
@@ -104,14 +108,19 @@ ClassMethod CodeRun(codeSet, count, result) As %Status
         if codeSet(i) = 1 { do ..Add(.codeSet, i) }
         elseif codeSet(i) = 2 { do ..Mul(.codeSet, i) }
         elseif codeSet(i) = 99 { quit }	
-        else { w "Unknown opcode "_ codeSet(i) _" in line "_ i _"– something went wrong!", ! return }
-        
-        #; do $case(codeSet(i), 
-        #;     1: ..Add(.codeSet, i), 
-        #;     2: ..Mul(.codeSet, i), 
-        #;     99: ..Halt(),
-        #;     : ..UnknownOps()
-        #; )
+        else { 
+            w "Unknown opcode "_ codeSet(i) _" in line "_ i _"– something went wrong!", ! 
+            quit 
+        }
+
+        #; if codeSet(i) = 99 { quit }
+        #; else {
+        #;     do $case(codeSet(i), 
+        #;         1: ..Add(.codeSet, i),
+        #;         2: ..Mul(.codeSet, i),
+        #;         : ..UnknownOps(.codeSet, i)
+        #;     )
+        #; }
     }
     
     set result = codeSet(0)
