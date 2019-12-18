@@ -37,7 +37,7 @@ Open IRIS terminal:
 ```
 $ docker-compose exec iris iris session iris
 USER>zn "IRISAPP"
-IRISAPP> ##class(eshvarov.Advent2019.Day1).Run()
+IRISAPP> ##class(kuznetsov.Advent2019.Day1).Run()
 ```
 
 ## How to add another task

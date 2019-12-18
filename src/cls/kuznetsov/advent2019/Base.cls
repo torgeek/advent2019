@@ -3,11 +3,11 @@ Class kuznetsov.Advent2019.Base
 
 Parameter Folder = "/irisdev/app/";
 
-ClassMethod GetInput(fn) As %Stream
+ClassMethod GetInput(fileName As %String) As %Stream
 {
-    set fn = ..#Folder_fn
+    set filePathAndName = ..#Folder_fileName
     set stream = ##Class(%Stream.FileCharacter).%New()
-    set sc = stream.LinkToFile(fn)
+    set sc = stream.LinkToFile(filePathAndName)
     return stream
 }
 
