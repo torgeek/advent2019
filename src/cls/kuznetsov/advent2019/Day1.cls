@@ -10,7 +10,7 @@ ClassMethod Run(verbose = 0) As %Integer
     set stream = ..GetInput(..#InputFile)
     set sum = 0
 	while 'stream.AtEnd {
-		set line=stream.ReadLine()
+		set line = stream.ReadLine()
         set line = line\3 - 2
         set sum = sum + line
         if verbose w "line = "_line," ","sum = "_sum,!
@@ -28,8 +28,9 @@ ClassMethod Run2(verbose = 0) As %Integer
         set full = 0       
         for {
             set fuel = fuel\3 - 2
-            quit:(fuel < 0)
-            set full = full + fuel
+            if (fuel > 0) {
+                set full = full + fuel
+            } else { quit }
         }
         set sum = sum + full
         if verbose w "line = "_line, " ", "sum = "_sum, !
