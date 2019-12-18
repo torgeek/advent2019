@@ -74,6 +74,17 @@ ClassMethod Mul(codeSet, i) As %Status
     return $$$OK
 }
 
+ClassMethod Halt() As %Status
+{
+    return $$$OK
+}
+
+ClassMethod UnknownOps() As %Status
+{
+    w "Unknown opcode "_ codeSet(i) _" in line "_ i _"– something went wrong!", !
+    return $$$OK
+}
+
 ClassMethod ProgramAlarm1202(codeSet) As %Status
 {
     do ..NounAndVerbInit(.codeSet, 12, 2)
@@ -95,11 +106,11 @@ ClassMethod CodeRun(codeSet, count, result) As %Status
         elseif codeSet(i) = 99 { quit }	
         else { w "Unknown opcode "_ codeSet(i) _" in line "_ i _"– something went wrong!", ! return }
         
-        #; do $CASE(codeSet(i),
-        #;     1: do ..Add(.codeSet, i),
-        #;     2: do ..Mul(.codeSet, i),
-        #;     99: w "The program is finished",
-        #;     : w "Unknown opcode "_ codeSet(i) _" in line "_ i _"– something went wrong!"
+        #; do $case(codeSet(i), 
+        #;     1: ..Add(.codeSet, i), 
+        #;     2: ..Mul(.codeSet, i), 
+        #;     99: ..Halt(),
+        #;     : ..UnknownOps()
         #; )
     }
     

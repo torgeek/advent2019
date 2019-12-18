@@ -1,7 +1,7 @@
-## objectscript-adventofcode-template
-This is a template to craft solutions for [AdventofCode](https://adventofcode.com/2019) in InterSystems ObjectScript.
+## ObjectScript AdventOfCode from template
+This is my craft solutions for [AdventofCode](https://adventofcode.com/2019) in InterSystems ObjectScript.
 
-Use this template in Github and have a ready-to-use template repo which lets you develop ObjectScript solutions for AdventOfCode puzzles.
+I used a ready-made template in Github that allows me to develop ObjectScript solutions for AdventOfCode puzzles using Docker.
 
 ## Prerequisites
 This needs to have git and docker installed.
