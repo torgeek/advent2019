@@ -7,22 +7,27 @@ Parameter InputFile = "input2.txt";
 
 ClassMethod Run(verbose = 0) As %Status
 {
-    do ..Read(.codeSet, .count)
+    do ..ReadFromFile(.codeSet, .count)
 
-    do ..ProgramAlarm1202(.codeSet)
+    do ..CopyCode(.codeSet, count, .copyCodeSet)    
+    do ..ProgramAlarm1202(.copyCodeSet)
+    do ..CodeRun(.copyCodeSet, count, .outputValue)
+    w "Value is left at position 0: "_ outputValue, !
 
-    for i = 0:4:count {
-        if codeSet(i) = 1 { do ..Add(.codeSet, i) }
-        elseif codeSet(i) = 2 { do ..Mul(.codeSet, i) }
-        elseif codeSet(i) = 99 { w "The program is finished", ! quit }	
-        else { w "Unknown opcode "_ codeSet(i) _" in line "_ i _"– something went wrong!", ! return }
-        
-        #; do $CASE(codeSet(i),
-        #;     1: do ..Add(.codeSet, i),
-        #;     2: do ..Mul(.codeSet, i),
-        #;     99: w "The program is finished",
-        #;     : w "Unknown opcode "_ codeSet(i) _" in line "_ i _"– something went wrong!"
-        #; )
+    do ..CopyCode(.codeSet, count, .copyCodeSet)
+    for i = 0:1:99 {
+        for j = 0:1:99 {
+            do ..CopyCode(.copyCodeSet, count, .copyCodeSetIJ)
+            do ..NounAndVerbInit(.copyCodeSetIJ, i, j)
+            do ..CodeRun(.copyCodeSetIJ, count, .outputValue)
+            if outputValue = 19690720 {
+                w "Value for i: "_ i _" j: "_ j _" "_ outputValue, !
+                do ..CopyCode(.copyCodeSet, count, .copyCodeSetIJ)
+                do ..NounAndVerbInit(.copyCodeSetIJ, i, j)
+                do ..CodePrint(.copyCodeSetIJ, count)
+                w "Answer: "_ (100 * i + j), !
+            }
+        }
     }
 
     if verbose {
@@ -34,13 +39,11 @@ ClassMethod Run(verbose = 0) As %Status
             w !
         }
     }
-    
-    w "Value is left at position 0: "_ codeSet(0), !
 
     return $$$OK
 }
 
-ClassMethod Read(codeSet, count) As %Status
+ClassMethod ReadFromFile(codeSet, count) As %Status
 {
     set stream = ..GetInput(..#InputFile)
     if stream.%IsNull() { w "Panic! File " _ ..#InputFile _ " is empty!", ! }
@@ -73,8 +76,52 @@ ClassMethod Mul(codeSet, i) As %Status
 
 ClassMethod ProgramAlarm1202(codeSet) As %Status
 {
-    set codeSet(1) = 12
-    set codeSet(2) = 2
+    do ..NounAndVerbInit(.codeSet, 12, 2)
+    return $$$OK
+}
+
+ClassMethod NounAndVerbInit(codeSet, noun, verb) As %Status
+{
+    set codeSet(1) = noun
+    set codeSet(2) = verb
+    return $$$OK
+}
+
+ClassMethod CodeRun(codeSet, count, result) As %Status
+{
+    for i = 0:4:count {
+        if codeSet(i) = 1 { do ..Add(.codeSet, i) }
+        elseif codeSet(i) = 2 { do ..Mul(.codeSet, i) }
+        elseif codeSet(i) = 99 { quit }	
+        else { w "Unknown opcode "_ codeSet(i) _" in line "_ i _"– something went wrong!", ! return }
+        
+        #; do $CASE(codeSet(i),
+        #;     1: do ..Add(.codeSet, i),
+        #;     2: do ..Mul(.codeSet, i),
+        #;     99: w "The program is finished",
+        #;     : w "Unknown opcode "_ codeSet(i) _" in line "_ i _"– something went wrong!"
+        #; )
+    }
+    
+    set result = codeSet(0)
+    
+    return $$$OK
+}
+
+ClassMethod CopyCode(codeSet, count, result) As %Status
+{
+    for i = 0:1:count {
+        set result(i) = codeSet(i) 
+    }
+    return $$$OK
+}
+
+ClassMethod CodePrint(codeSet, count)
+{
+    for i = 0:1:count {
+        w codeSet(i) _ "," 
+    }
+    w !
     return $$$OK
 }
 
