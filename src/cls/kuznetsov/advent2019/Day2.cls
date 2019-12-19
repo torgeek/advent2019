@@ -10,64 +10,65 @@ Parameter MAX = 99;
 ClassMethod Run(verbose = 0) As %Status
 {
     set sc = ..ReadFromFile(.codeSet, .count)
-    if $$$ISERR(sc) return 0
+    if $$$ISERR(sc) {
+        w "Panic! File " _ ..#InputFile _ " is empty or not found!", !
+    } else {
+        // Part 1/2
+        do ..CopyCode(.codeSet, count, .copyCodeSet)    
+        do ..ProgramAlarm1202(.copyCodeSet)
+        do ..CodeRun(.copyCodeSet, count, .outputValue)
+        w "Value is left at position 0: "_ outputValue, !
 
-    // Part 1/2
-    do ..CopyCode(.codeSet, count, .copyCodeSet)    
-    do ..ProgramAlarm1202(.copyCodeSet)
-    do ..CodeRun(.copyCodeSet, count, .outputValue)
-    w "Value is left at position 0: "_ outputValue, !
-
-    // Part 2/2 – bruteforce selection noun and verb
-    do ..CopyCode(.codeSet, count, .copyCodeSet)
-    for i = 0:1:..#MAX {
-        for j = 0:1:..#MAX {
-            do ..CopyCode(.copyCodeSet, count, .copyCodeSetIJ)
-            do ..NounAndVerbInit(.copyCodeSetIJ, i, j)
-            do ..CodeRun(.copyCodeSetIJ, count, .outputValue)
-            if outputValue = 19690720 {
-                w "Value for i: "_ i _" j: "_ j _" "_ outputValue, !
+        // Part 2/2 – bruteforce selection noun and verb
+        do ..CopyCode(.codeSet, count, .copyCodeSet)
+        for i = 0:1:..#MAX {
+            for j = 0:1:..#MAX {
                 do ..CopyCode(.copyCodeSet, count, .copyCodeSetIJ)
                 do ..NounAndVerbInit(.copyCodeSetIJ, i, j)
-                do ..CodePrint(.copyCodeSetIJ, count)
-                w "Answer: "_ (100 * i + j), !
+                do ..CodeRun(.copyCodeSetIJ, count, .outputValue)
+                if outputValue = 19690720 {
+                    w "Value for i: "_ i _" j: "_ j _" "_ outputValue, !
+                    do ..CopyCode(.copyCodeSet, count, .copyCodeSetIJ)
+                    do ..NounAndVerbInit(.copyCodeSetIJ, i, j)
+                    do ..CodePrint(.copyCodeSetIJ, count)
+                    w "Answer: "_ (100 * i + j), !
+                }
+            }
+        }
+
+        if verbose {
+            for i = 0:4:count { 
+                w i _ ": " _ codeSet(i) 
+                if ( i+1 <= count ) w " "_ codeSet(i+1)
+                if ( i+2 <= count ) w " "_ codeSet(i+2)
+                if ( i+3 <= count ) w " "_ codeSet(i+3)
+                w !
             }
         }
     }
 
-    if verbose {
-        for i = 0:4:count { 
-            w i _ ": " _ codeSet(i) 
-            if ( i+1 <= count ) w " "_ codeSet(i+1)
-            if ( i+2 <= count ) w " "_ codeSet(i+2)
-            if ( i+3 <= count ) w " "_ codeSet(i+3)
-            w !
-        }
-    }
-
-    return $$$OK
+    return sc
 }
 
 ClassMethod ReadFromFile(codeSet, count) As %Status
 {
     Set sc = $$$OK
     set stream = ..GetInput(..#InputFile)
-    if stream.%IsNull() { 
-        w "Panic! File " _ ..#InputFile _ " is empty!", ! 
-        return 0 
-    }
-    set i = 0
-    set codeSet(0) = ""
-	while 'stream.AtEnd {
-		set char = stream.Read(1)
-        if (char = ",") {
-            set i = i + 1
-            set codeSet(i) = ""
-        } else {
-            set codeSet(i) = codeSet(i)_char
+    if stream.%IsNull() { set sc = 0 }
+    else {
+        set i = 0
+        set codeSet(0) = ""
+        while 'stream.AtEnd {
+            set char = stream.Read(1)
+            if (char = ",") {
+                set i = i + 1
+                set codeSet(i) = ""
+            } else {
+                set codeSet(i) = codeSet(i)_char
+            }
         }
+        set count = i
     }
-    set count = i
     return sc
 }
 
