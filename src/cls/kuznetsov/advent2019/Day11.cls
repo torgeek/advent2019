@@ -1,9 +1,9 @@
-Class kuznetsov.Advent2019.Day19 Extends kuznetsov.Advent2019.Base
+Class kuznetsov.Advent2019.Day11 Extends kuznetsov.Advent2019.Base
 {
 
-Parameter InputFile = "input19.txt";
+Parameter InputFile = "input11.txt";
 
-// w ##class(kuznetsov.Advent2019.Day19).Run()
+// w ##class(kuznetsov.Advent2019.Day11).Run()
 
 ClassMethod Run(verbose = 0) As %Status
 {
@@ -15,8 +15,9 @@ ClassMethod Run(verbose = 0) As %Status
         // Part 1/2
         if verbose { w !, "Part 1/2 result: ", ! }
         set sc = ..ParseFromString(.instructionSet, .count, .codeSet)
-        set input = 0
-        set sc = ..CodeRun(.codeSet, count, input, verbose)
+        merge codeSetCopy = codeSet
+        set input = 4
+        set sc = ..CodeRun(.codeSetCopy, count, input, verbose)
 
         // Part 2/2 
         #; if verbose { w !, "Part 2/2 result: ", ! }
@@ -96,7 +97,7 @@ ClassMethod CodeRun(codeSet, count, input = 0, verbose = 0) As %Status
         }  
         
         if verbose { 
-            // for i = 1:1:pNum { w " A"_ i _": "_ pAddr(i) _":"_ codeSet(pAddr(i)) }
+            #; for i = 1:1:pNum { w " A"_ i _": "_ pAddr(i) _":"_ codeSet(pAddr(i)) }
             w !
         }
 
@@ -139,6 +140,7 @@ ClassMethod Mul(codeSet, pAddr) As %Status
 
 ClassMethod Input(codeSet, pAddr, input) As %Status
 {
+    read input
     set codeSet(pAddr(1)) = input
     return $$$OK
 }

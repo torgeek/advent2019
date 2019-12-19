@@ -1,9 +1,9 @@
-Class kuznetsov.Advent2019.Day19 Extends kuznetsov.Advent2019.Base
+Class kuznetsov.Advent2019.Day7 Extends kuznetsov.Advent2019.Base
 {
 
-Parameter InputFile = "input19.txt";
+Parameter InputFile = "input7.txt";
 
-// w ##class(kuznetsov.Advent2019.Day19).Run()
+// w ##class(kuznetsov.Advent2019.Day7).Run()
 
 ClassMethod Run(verbose = 0) As %Status
 {
@@ -11,13 +11,48 @@ ClassMethod Run(verbose = 0) As %Status
     if $$$ISERR(sc) {
         w "Panic! File " _ ..#InputFile _ " is empty or not found!", !
     } else {
-
+        
         // Part 1/2
         if verbose { w !, "Part 1/2 result: ", ! }
         set sc = ..ParseFromString(.instructionSet, .count, .codeSet)
-        set input = 0
-        set sc = ..CodeRun(.codeSet, count, input, verbose)
 
+        set highestSignal = 0
+        for i = 0:1:4 {
+            for j = 0:1:4 {
+                if j = i continue
+                for l = 0:1:4 {
+                    if l = j continue 
+                    if l = i continue
+                    for k = 0:1:4 {
+                        if k = l continue
+                        if k = j continue
+                        if k = i continue
+                        for m = 0:1:4 {
+                            if m = i continue
+                            if m = j continue
+                            if m = k continue
+                            if m = l continue
+
+                            set phase(0) = i
+                            set phase(1) = j
+                            set phase(2) = l
+                            set phase(3) = k
+                            set phase(4) = m
+
+                            set out = 0
+                            for amp = 0:1:4 {
+                                merge codeSetCopy = codeSet
+                                set in(1) = phase(amp)
+                                set in(2) = out
+                                set sc = ..CodeRun(.codeSetCopy, count, .in, verbose, .out)
+                            }
+                            if highestSignal < out { set highestSignal = out}
+                        }
+                    }
+                }
+            }
+        }
+        w "highest signal: "_ highestSignal, !
         // Part 2/2 
         #; if verbose { w !, "Part 2/2 result: ", ! }
         #; set sc = ..ParseFromString(.instructionSet, .count, .codeSet)
@@ -49,11 +84,12 @@ ClassMethod ParseFromString(codeString, count, codeArray) As %Status
     return $$$OK
 }
 
-ClassMethod CodeRun(codeSet, count, input = 0, verbose = 0) As %Status
+ClassMethod CodeRun(codeSet, count, inputs, verbose = 0, outputs) As %Status
 {
     set relativeBase = 0 // variable pointer
     set op = 0 // operations counter 
     set pNum = 0 // parameter number
+    set inputsCounter = 1
 
     for {
         // decoding the operation code and the number of its parameters 
@@ -61,7 +97,16 @@ ClassMethod CodeRun(codeSet, count, input = 0, verbose = 0) As %Status
 
         if verbose { w op _ " code: "_ codeSet(op) _" op: "_ opCode }
         
-        if opCode = 99 { w !, "HALT ", ! return $$$OK }
+        if opCode = 99 { 
+            if verbose { w !, "HALT ", ! } 
+            set outputs = out
+            return $$$OK 
+        }
+
+        if opCode = 3 { 
+            set in = inputs(inputsCounter)
+            set inputsCounter = inputsCounter + 1
+        }
         
         set pNum = $case(opCode,
             1: 3,
@@ -96,7 +141,7 @@ ClassMethod CodeRun(codeSet, count, input = 0, verbose = 0) As %Status
         }  
         
         if verbose { 
-            // for i = 1:1:pNum { w " A"_ i _": "_ pAddr(i) _":"_ codeSet(pAddr(i)) }
+            #; for i = 1:1:pNum { w " A"_ i _": "_ pAddr(i) _":"_ codeSet(pAddr(i)) }
             w !
         }
 
@@ -105,8 +150,8 @@ ClassMethod CodeRun(codeSet, count, input = 0, verbose = 0) As %Status
         do $case( opCode, 
             1: ..Add(.codeSet, .pAddr),
             2: ..Mul(.codeSet, .pAddr),
-            3: ..Input(.codeSet, .pAddr, input),
-            4: ..Outputs(.codeSet, .pAddr),
+            3: ..Input(.codeSet, .pAddr, in),
+            4: ..Outputs(.codeSet, .pAddr, .out),
             5: ..JumpIfTrue(.codeSet, .pAddr, .op),
             6: ..JumpIfFalse(.codeSet, .pAddr, .op),
             7: ..LessThan(.codeSet, .pAddr),
@@ -139,13 +184,16 @@ ClassMethod Mul(codeSet, pAddr) As %Status
 
 ClassMethod Input(codeSet, pAddr, input) As %Status
 {
+    #; read input
+    #; w !
     set codeSet(pAddr(1)) = input
     return $$$OK
 }
 
-ClassMethod Outputs(codeSet, pAddr) As %Status
+ClassMethod Outputs(codeSet, pAddr, outputs) As %Status
 {
-    w ": "_ codeSet(pAddr(1)), !
+    set outputs = codeSet(pAddr(1))
+    #; w ": "_ outputs, !
     return $$$OK
 }
 
