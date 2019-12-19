@@ -1,9 +1,9 @@
-Class kuznetsov.Advent2019.Day5 Extends kuznetsov.Advent2019.Base
+Class kuznetsov.Advent2019.Day9 Extends kuznetsov.Advent2019.Base
 {
 
 Parameter InputFile = "input9.txt";
 
-// w ##class(kuznetsov.Advent2019.Day5).Run()
+// w ##class(kuznetsov.Advent2019.Day9).Run()
 
 ClassMethod Run(verbose = 0) As %Status
 {
@@ -21,7 +21,7 @@ ClassMethod Run(verbose = 0) As %Status
         // Part 2/2 
         if verbose { w !, "Part 2/2 result: ", ! }
         set sc = ..ParseFromString(.instructionSet, .count, .codeSet)
-        set input = 5
+        set input = 2
         set sc = ..CodeRun(.codeSet, count, input, verbose)
 
     }
