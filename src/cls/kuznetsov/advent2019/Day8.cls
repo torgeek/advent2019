@@ -29,14 +29,16 @@ ClassMethod Run(verbose = 0) As %Status
 
         do ..DigitsCounter(.layer, layerWithFewestZero, 1, .result)
         set answer = result
-        
+
         do ..DigitsCounter(.layer, layerWithFewestZero, 2, .result)
         set answer = answer * result
 
-        w "Answer: "_ answer 
+        w "Answer: "_ answer, !
 
         // Part 2/2 
         if verbose { w !, "Part 2/2 result: ", ! }
+        do ..DecodeTheImage(.layer, numberOfLayer, layerSize)
+        do ..ViewImage(.layer, "image")
     }    
     return sc
 }
@@ -58,7 +60,6 @@ ClassMethod ParseFromString(image, layerSize, numberOfLayer, layer) As %Status
     set j = 1
     for i = 1 : layerSize : numberOfLayer * layerSize {
         set layer(j) = $EXTRACT(image, i , i + layerSize - 1)
-
         set j = j + 1
     }
     return $$$OK
@@ -74,6 +75,28 @@ ClassMethod DigitsCounter(layer, layerN, digit, result) As %Status
         set pos = $FIND(layer(layerN), digit, pos)
     } while pos
     return sc
+}
+
+ClassMethod DecodeTheImage(layer, numberOfLayer, layerSize) As %Status
+{
+    set layer("image") = ""
+    for pos = 1:1:layerSize {
+        for n = 1:1:numberOfLayer {
+            set pixel = $EXTRACT(layer(n), pos, pos)
+            if pixel = 0 { set layer("image") = layer("image")_" " quit }
+            elseif pixel = 1 { set layer("image") = layer("image")_"#" quit }
+        }
+    }
+}
+
+ClassMethod ViewImage(layer, layerN, wide = 25, tall = 6) As %Status
+{
+    w !
+    for i = 1:1:tall {
+        w $EXTRACT(layer(layerN), (i - 1) * wide + 1, i * wide)
+        w !
+    }
+    return $$$OK
 }
 
 }
