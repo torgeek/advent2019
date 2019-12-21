@@ -15,18 +15,117 @@ ClassMethod Run(verbose = 0) As %Status
         // Part 1/2
         if verbose { w !, "Part 1/2 result: ", ! }
         set sc = ..ParseFromString(.instructionSet, .count, .codeSet)
-        merge codeSetCopy = codeSet
-        set input = 4
-        set sc = ..CodeRun(.codeSetCopy, count, input, verbose)
+        
+        set hart = 1 // thread number
+        merge code(hart) = codeSet // thread codebase
+        set code(hart, "op") = 0 // 1st instruction adress
+        #; set in = 0
+        set duet = 0 // for day11
+        do ..initTiles(.tiles)
+        do ..initRobot(.robot)
+        do ..showScreen(.tiles, .robot)
+
+        for {
+            set sc = ..CodeRun(hart, .code, count, verbose, .in, .out, .irq)
+            if irq = "halt" { quit }
+            elseif irq = "in" {
+                set in = tiles(robot("x"), robot("y"))
+            }
+            elseif irq = "out" {
+                w out _" ", !
+                if duet = 0 {
+                    set tiles(robot("x"), robot("y")) = out
+                }
+                if duet = 1 { 
+                    if out = 0 { set robot("view") = robot("view") + 3 # 4 }
+                    else { set robot("view") = robot("view") + 1 # 4 }
+                    
+                    if robot("view") = 0 { set robot("y") = robot("y") - 1 }
+                    elseif robot("view") = 1 { set robot("x") = robot("x") + 1 }
+                    elseif robot("view") = 2 { set robot("y") = robot("y") + 1 }
+                    else { set robot("x") = robot("x") - 1 }
+
+                    do ..showScreen(.tiles, .robot)
+                }
+                set duet = (duet + 1) # 2
+            }
+            else { w "Unknown interrupt!" quit }
+        }
+
+        w "Part 1/2 Answer: ", blockTileCount, !
 
         // Part 2/2 
-        #; if verbose { w !, "Part 2/2 result: ", ! }
-        #; set sc = ..ParseFromString(.instructionSet, .count, .codeSet)
-        #; set input = 2
-        #; set sc = ..CodeRun(.codeSet, count, input, verbose)
+        if verbose { w !, "Part 2/2 result: ", ! }
+
+        #; set hart = 2 // thread number
+        #; merge code(hart) = codeSet // thread codebase
+        #; set code(hart, "op") = 0 // 1st instruction adress
+        #; set in = 0
+        #; set triples = 0 // for day11
+        #; set code(hart, 0) = 2 // for day11 part2/2
+        
+        #; for {
+        #;     set sc = ..CodeRun(hart, .code, count, verbose, in, .out, .irq)
+        #;     if irq = "halt" { quit }
+        #;     elseif irq = "in" {
+        #;         read in
+        #;     }
+        #;     elseif irq = "out" {
+        #;         if triples = 0 set x = out
+
+        #;         if triples = 1 set y = out
+                
+        #;         if triples = 2 {
+        #;             if x = -1 { set score = out quit }
+        #;             set tileId = out
+        #;             if x = 0 set screen(y) = ""
+        #;             do ..drawTile(.screen, y, tileId)
+        #;             if x = 42 do ..showScreen(.screen, y)
+        #;         }
+        #;         set triples = (triples + 1) # 3
+        #;     }
+        #;     else { w "Unknown interrupt!" quit }
+        #; }
+        #; w "X: "_ x _" Y: "_ y, !
+        #; w "Part 2/2 Answer: ", score, !
 
     }
     return sc
+}
+
+ClassMethod initTiles(tiles) As %Status
+{
+    for y = 1:1:5 {
+        for x = 1:1:5 {
+            set tiles(x, y) = 0
+        }
+    }
+    return $$$OK
+}
+
+ClassMethod initRobot(robot) As %Status
+{
+    set robot("x") = 3
+    set robot("y") = 3
+    set robot("view") = 0
+    set robot(0) = "^"
+    set robot(1) = ">"
+    set robot(2) = "v"
+    set robot(3) = "<"    
+    return $$$OK
+}
+
+ClassMethod showScreen(tiles, robot) As %Status
+{
+    for y = 1:1:5 {
+        for x = 1:1:5 {
+            if (x = robot("x")) && (y = robot("y")) { w robot(robot("view")) }
+            elseif tiles(x, y) = 1  { w "#" }
+            else { w "." }
+        }
+        w !
+    }
+    return $$$OK
 }
 
 ClassMethod ReadFromFile(string) As %Status
@@ -50,19 +149,32 @@ ClassMethod ParseFromString(codeString, count, codeArray) As %Status
     return $$$OK
 }
 
-ClassMethod CodeRun(codeSet, count, input = 0, verbose = 0) As %Status
+ClassMethod CodeRun(hart, codeSet, count, verbose = 0, in, out, irq) As %Status
 {
     set relativeBase = 0 // variable pointer
-    set op = 0 // operations counter 
+    set op = codeSet(hart, "op") // operations counter
     set pNum = 0 // parameter number
+    set inputsCounter = 1
 
     for {
         // decoding the operation code and the number of its parameters 
-        set opCode = codeSet(op) # 100
+        set opCode = codeSet(hart, op) # 100
 
-        if verbose { w op _ " code: "_ codeSet(op) _" op: "_ opCode }
+        if verbose { w op _ " code: "_ codeSet(hart, op) _" op: "_ opCode }
         
-        if opCode = 99 { w !, "HALT ", ! return $$$OK }
+        // halt interrupt
+        if opCode = 99 { 
+            if verbose { w !, "HALT ", ! } 
+            set irq = "halt"
+            return $$$OK 
+        }
+        
+        // input interrupt
+        if opCode = 3 && '$data(in) {
+            set codeSet(hart, "op") = op
+            set irq = "in"
+            return $$$OK
+        }        
         
         set pNum = $case(opCode,
             1: 3,
@@ -76,45 +188,53 @@ ClassMethod CodeRun(codeSet, count, input = 0, verbose = 0) As %Status
             9: 1,
             : ..UnknownOp(opCode, op)
         )
-        if pNum = 0 return 0
 
         if verbose { w " pNum: "_ pNum } 
 
         // decode mode for each parameter: 0 == position, 1 == immediate, 2 == relative
         for i = 1:1:pNum {
             set k = 10 ** (i + 1)
-            set pMode(i) = (codeSet(op) - (codeSet(op) # k)) / k # 10 
+            set pMode(i) = (codeSet(hart, op) - (codeSet(hart, op) # k)) / k # 10 
         }
 
-        if verbose { for i = 1:1:pNum { w " p"_ i _": "_ pMode(i) } } 
+        if verbose { for i = 1:1:pNum { w " "_ codeSet(hart, op + i) } }
+        if verbose { for i = 1:1:pNum { w " pmode"_ i _": "_ pMode(i) } } 
         
         // decoding of the actual parameter addresses of the operation
-        for j = 1:1:pNum {
-            if pMode(j) = 0 { set pAddr(j) = codeSet(op+j) }
-            elseif pMode(j) = 1 { set pAddr(j) = op+j }
-            elseif pMode(j) = 2 { set pAddr(j) = codeSet(op+j) + relativeBase }
+        for i = 1:1:pNum {
+            if pMode(i) = 0 { set pAddr(i) = codeSet(hart, op + i) }
+            elseif pMode(i) = 1 { set pAddr(i) = op + i }
+            elseif pMode(i) = 2 { set pAddr(i) = codeSet(hart, op + i) + relativeBase }
             else { return 0 }
         }  
         
-        if verbose { 
-            #; for i = 1:1:pNum { w " A"_ i _": "_ pAddr(i) _":"_ codeSet(pAddr(i)) }
-            w !
-        }
+        #; if verbose { 
+        #;     for i = 1:1:pNum { w " Addr"_ i _": "_ pAddr(i) }
+        #;     for i = 1:1:pNum { w " : " _ codeSet(hart, pAddr(i)) }
+        #;     w !
+        #; }
 
         set op = op + pNum + 1 // next instruction, some operations may change it
 
         do $case( opCode, 
-            1: ..Add(.codeSet, .pAddr),
-            2: ..Mul(.codeSet, .pAddr),
-            3: ..Input(.codeSet, .pAddr, input),
-            4: ..Outputs(.codeSet, .pAddr),
-            5: ..JumpIfTrue(.codeSet, .pAddr, .op),
-            6: ..JumpIfFalse(.codeSet, .pAddr, .op),
-            7: ..LessThan(.codeSet, .pAddr),
-            8: ..equals(.codeSet, .pAddr),
-            9: ..AdjustsRelativeBase(.codeSet, .pAddr, .relativeBase),
+            1: ..Add(.codeSet, hart, .pAddr),
+            2: ..Mul(.codeSet, hart, .pAddr),
+            3: ..Input(.codeSet, hart, .pAddr, .in),
+            4: ..Outputs(.codeSet, hart, .pAddr, .out),
+            5: ..JumpIfTrue(.codeSet, hart, .pAddr, .op),
+            6: ..JumpIfFalse(.codeSet, hart, .pAddr, .op),
+            7: ..LessThan(.codeSet, hart, .pAddr),
+            8: ..equals(.codeSet, hart, .pAddr),
+            9: ..AdjustsRelativeBase(.codeSet, hart, .pAddr, .relativeBase),
             : ..UnknownOp(opCode, op)
         )
+        
+        // output interrupt
+        if opCode = 4 {
+            set codeSet(hart, "op") = op
+            set irq = "out"
+            return $$$OK
+        }
     }
 
     return $$$OK
@@ -126,66 +246,66 @@ ClassMethod UnknownOp(opCode, op) As %Status
     return 0
 }
 
-ClassMethod Add(codeSet, pAddr) As %Status
+ClassMethod Add(codeSet, hart, pAddr) As %Status
 {
-    set codeSet(pAddr(3)) = codeSet(pAddr(1)) + codeSet(pAddr(2))
+    set codeSet(hart, pAddr(3)) = codeSet(hart, pAddr(1)) + codeSet(hart, pAddr(2))
     return $$$OK
 }
 
-ClassMethod Mul(codeSet, pAddr) As %Status
+ClassMethod Mul(codeSet, hart, pAddr) As %Status
 {
-    set codeSet(pAddr(3)) = codeSet(pAddr(1)) * codeSet(pAddr(2))
+    set codeSet(hart, pAddr(3)) = codeSet(hart, pAddr(1)) * codeSet(hart, pAddr(2))
     return $$$OK
 }
 
-ClassMethod Input(codeSet, pAddr, input) As %Status
+ClassMethod Input(codeSet, hart, pAddr, in) As %Status
 {
-    read input
-    set codeSet(pAddr(1)) = input
+    set codeSet(hart, pAddr(1)) = in
+    kill in
     return $$$OK
 }
 
-ClassMethod Outputs(codeSet, pAddr) As %Status
+ClassMethod Outputs(codeSet, hart, pAddr, out) As %Status
 {
-    w ": "_ codeSet(pAddr(1)), !
+    set out = codeSet(hart, pAddr(1))
     return $$$OK
 }
 
-ClassMethod JumpIfTrue(codeSet, pAddr, op) As %Status
+ClassMethod JumpIfTrue(codeSet, hart, pAddr, op) As %Status
 {
-    if codeSet(pAddr(1)) '= 0 { set op = codeSet(pAddr(2)) }
+    if codeSet(hart, pAddr(1)) '= 0 { set op = codeSet(hart, pAddr(2)) }
     return $$$OK
 }
 
-ClassMethod JumpIfFalse(codeSet, pAddr, op) As %Status
+ClassMethod JumpIfFalse(codeSet, hart, pAddr, op) As %Status
 {
-    if codeSet(pAddr(1)) = 0 { set op = codeSet(pAddr(2)) }
+    if codeSet(hart, pAddr(1)) = 0 { set op = codeSet(hart, pAddr(2)) }
     return $$$OK
 }
 
-ClassMethod LessThan(codeSet, pAddr) As %Status
+ClassMethod LessThan(codeSet, hart, pAddr) As %Status
 {
-    if codeSet(pAddr(1)) < codeSet(pAddr(2)) { 
-        set codeSet(pAddr(3)) = 1 
+    if codeSet(hart, pAddr(1)) < codeSet(hart, pAddr(2)) { 
+        set codeSet(hart, pAddr(3)) = 1 
     }
-    else { set codeSet(pAddr(3)) = 0 }
+    else { set codeSet(hart, pAddr(3)) = 0 }
     
     return $$$OK
 }
 
-ClassMethod equals(codeSet, pAddr) As %Status
+ClassMethod equals(codeSet, hart, pAddr) As %Status
 {
-    if codeSet(pAddr(1)) = codeSet(pAddr(2)) { 
-        set codeSet(pAddr(3)) = 1 
+    if codeSet(hart, pAddr(1)) = codeSet(hart, pAddr(2)) { 
+        set codeSet(hart, pAddr(3)) = 1 
     }
-    else { set codeSet(pAddr(3)) = 0 }
+    else { set codeSet(hart, pAddr(3)) = 0 }
 
     return $$$OK
 }
 
-ClassMethod AdjustsRelativeBase(codeSet, pAddr, relativeBase) As %Status
+ClassMethod AdjustsRelativeBase(codeSet, hart, pAddr, relativeBase) As %Status
 {
-    set relativeBase = relativeBase + codeSet(pAddr(1))
+    set relativeBase = relativeBase + codeSet(hart, pAddr(1))
     return $$$OK
 }
 
