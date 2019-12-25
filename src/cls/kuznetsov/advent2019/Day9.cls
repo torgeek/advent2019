@@ -1,3 +1,5 @@
+/// Advent Of Code 2019 in ObjectScript
+/// Author: Dmitrii Kuznetsov
 Class kuznetsov.Advent2019.Day9 Extends kuznetsov.Advent2019.Base
 {
 
