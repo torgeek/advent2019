@@ -11,21 +11,38 @@ ClassMethod Run(verbose = 0) As %Status
     if $$$ISERR(sc) {
         w "Panic! File " _ ..#InputFile _ " is empty or not found!", !
     } else {
-        set sc = ..ParseOrbit(.mapData, pairNum, .orbitSet)
+        set sc = ..ParseOrbit(.mapData, pairNum, .orbitTree)
 
         // Part 1/2
-        if verbose { w "Part 1/2", ! }
+        w:verbose=1 "Part 1/2", !
 
+        set (directOrbits, indirectOrbits) = 0
+        
+        set orbitsNum = $length(orbitTree, ",") - 1
+
+        for i = 1:1:orbitsNum {
+            set id = $piece(orbitTree, ",", i)
+            do $i(directOrbits)
+            while id '= "COM" {
+                w:verbose=1 id, " "
+                set id = orbitTree(id)
+                do $i(indirectOrbits)
+            }
+            do $i(indirectOrbits, -1)
+            w:verbose=1 !
+        }
+
+        w "Answer: ", directOrbits + indirectOrbits, !
 
         // Part 2/2 
-        if verbose { w !, "Part 2/2", ! }
+        w:verbose=1 "Part 2/2", !
 
     }
 
     return sc
 }
 
-ClassMethod ReadFromFile(mapData, pairNum) As %Status
+ClassMethod ReadFromFile(ByRef mapData, Output pairNum) As %Status
 {
     Set sc = $$$OK
     set stream = ..GetInput(..#InputFile)
@@ -33,19 +50,30 @@ ClassMethod ReadFromFile(mapData, pairNum) As %Status
     else {
         set pairNum = 0
         while 'stream.AtEnd {
-            set pairNum = pairNum + 1
-            set mapData(pairNum) = stream.ReadLine()
+            set mapData($i(pairNum)) = stream.ReadLine()
         }
     }
     return sc
 }
 
-ClassMethod ParseOrbit(mapData, pairNum, orbitSet) As %Status
+ClassMethod ParseOrbit(ByRef mapData, pairNum, Output orbitTree) As %Status
 {
+    set orbitTree = ""
     for i = 1:1:pairNum {
-        set around = $EXTRACT(mapData(i), 1, 3)
-        set orbitSet(around) = ($EXTRACT(mapData(i), 5, 7)) 
+        set orbit = $piece(mapData(i), ")", 1)
+        set around = $piece(mapData(i), ")", 2)
+        set orbitTree(around) = orbit
+
+        if '$find(orbitTree, orbit) {
+            if orbit '= "COM" {
+            set orbitTree = orbitTree_orbit_"," }
+        }
+        if '$find(orbitTree, around) {
+            set orbitTree = orbitTree_around_","
+        }
+             
     }
+
     return $$$OK
 }
 
