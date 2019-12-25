@@ -16,7 +16,7 @@ ClassMethod Run(verbose = 0) As %Status
         set sc = ..ParseOrbit(.mapData, pairNum, .orbitTree)
 
         // Part 1/2
-        w:verbose=1 "Part 1/2", !
+        w:verbose=0 "Part 1/2", !
 
         set (directOrbits, indirectOrbits) = 0
         
@@ -37,7 +37,49 @@ ClassMethod Run(verbose = 0) As %Status
         w "Answer: ", directOrbits + indirectOrbits, !
 
         // Part 2/2 
-        w:verbose=1 "Part 2/2", !
+        w:verbose=0 "Part 2/2", !
+
+        set id = "YOU"
+        set path(1) = ""
+        while id '= "COM" {
+            set path(1) = path(1) _ id _">"
+            set id = orbitTree(id)
+            do $i(OrbitalTransfers)
+        }
+        w path(1), !
+
+        set id = "SAN"
+        set path(2) = ""
+        while id '= "COM" {
+            set path(2) = path(2) _ id _ ">"
+            set id = orbitTree(id)
+            do $i(OrbitalTransfers)
+        }
+        w path(2), !
+
+        set minOrbitalTransfers = 0
+        
+        set pathNum = $length(path(1), ">") - 1
+        
+        for i = 1:1:pathNum {
+            set orbit = $piece(path(1), ">", i)
+            do $i(minOrbitalTransfers)
+            if $find(path(2), orbit) {
+                set meetingPoint = orbit
+                quit
+            }
+        }
+        w meetingPoint, !
+        
+        set pathNum = $length(path(2), ">") - 1
+        
+        for i = 1:1:pathNum {
+            set orbit = $piece(path(2), ">", i)
+            do $i(minOrbitalTransfers)
+            if orbit = meetingPoint { quit }
+        }
+
+        w "Answer: ", minOrbitalTransfers - 4, !
 
     }
 
@@ -68,7 +110,8 @@ ClassMethod ParseOrbit(ByRef mapData, pairNum, Output orbitTree) As %Status
 
         if '$find(orbitTree, orbit) {
             if orbit '= "COM" {
-            set orbitTree = orbitTree_orbit_"," }
+                set orbitTree = orbitTree_orbit_"," 
+            }
         }
         if '$find(orbitTree, around) {
             set orbitTree = orbitTree_around_","
