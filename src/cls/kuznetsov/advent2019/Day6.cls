@@ -46,7 +46,7 @@ ClassMethod Run(verbose = 0) As %Status
             set id = orbitTree(id)
             do $i(OrbitalTransfers)
         }
-        w path(1), !
+        w:verbose=1 path(1), !
 
         set id = "SAN"
         set path(2) = ""
@@ -55,7 +55,7 @@ ClassMethod Run(verbose = 0) As %Status
             set id = orbitTree(id)
             do $i(OrbitalTransfers)
         }
-        w path(2), !
+        w:verbose=1 path(2), !
 
         set minOrbitalTransfers = 0
         
@@ -69,7 +69,7 @@ ClassMethod Run(verbose = 0) As %Status
                 quit
             }
         }
-        w meetingPoint, !
+        w:verbose=1 meetingPoint, !
         
         set pathNum = $length(path(2), ">") - 1
         
